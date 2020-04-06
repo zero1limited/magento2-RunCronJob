@@ -21,7 +21,7 @@
         "Cron",
         "CLI",
         "console",
-        "bin/magento",
+        "bin magento",
         "run cron job"
     ],
     "suggest": {
