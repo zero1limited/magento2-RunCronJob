@@ -101,8 +101,13 @@ class RunCronJob extends Command
             $method
         ));
 
+        $startTime = time();
         call_user_func($callback);
+        $runTime = (time() - $startTime);
 
         $output->writeln('<info>Finished</info>');
+        $output->writeln('<comment>Total run time: '.$runTime.' seconds</comment>');
+        $output->writeln('<comment>peak memory (real): '.memory_get_peak_usage(true).'bytes </comment>');
+        $output->writeln('<comment>peak memory: '.memory_get_peak_usage().'bytes </comment>');
     }
 }
