@@ -9,3 +9,8 @@ To test generation of sitemaps
 The `job-code` is that same as would be found in the `cron_schedule` table
 Or in a modules `crontab.xml` for example:
 https://github.com/magento/magento2/blob/2.4-develop/app/code/Magento/Sitemap/etc/crontab.xml#L10
+
+
+## Versions
+- For Magento >= 2.4, use 1.1.0
+- For Magento < 2.4, use 1.0.1

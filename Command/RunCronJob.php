@@ -5,6 +5,10 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Magento\Framework\App\ObjectManagerFactory;
+use Magento\Store\Model\Store;
+use Magento\Store\Model\StoreManager;
+use Magento\Framework\App\Area;
 
 class RunCronJob extends Command
 {
@@ -15,18 +19,16 @@ class RunCronJob extends Command
     const EXIT_CODE_INVALID_JOB_CONFIG = 4;
     const EXIT_CODE_METHOD_UNCALLABLE = 5;
 
-    /** @var \Magento\Framework\ObjectManagerInterface */
-    protected $objectManager;
+    /** @var \Magento\Framework\App\ObjectManagerFactory */
+    protected $objectManagerFactory;
 
     /** @var \Magento\Cron\Model\ConfigInterface */
     protected $config;
 
     public function __construct(
-        \Magento\Framework\ObjectManagerInterface $objectManager,
-        \Magento\Cron\Model\ConfigInterface $config
+        ObjectManagerFactory $objectManagerFactory
     ){
-        $this->objectManager = $objectManager;
-        $this->config = $config;
+        $this->objectManagerFactory = $objectManagerFactory;
         parent::__construct();
     }
 
@@ -47,6 +49,20 @@ class RunCronJob extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $omParams = $_SERVER;
+        $omParams[StoreManager::PARAM_RUN_CODE] = 'admin';
+        $omParams[Store::CUSTOM_ENTRY_POINT_PARAM] = true;
+        $objectManager = $this->objectManagerFactory->create($omParams);
+
+        $state = $objectManager->get(\Magento\Framework\App\State::class);
+        $areaList = $objectManager->get( \Magento\Framework\App\AreaList::class);
+
+        $state->setAreaCode(Area::AREA_CRONTAB);
+        $configLoader = $objectManager->get(\Magento\Framework\ObjectManager\ConfigLoaderInterface::class);
+        $objectManager->configure($configLoader->load(Area::AREA_CRONTAB));
+        $areaList->getArea(Area::AREA_CRONTAB)->load(Area::PART_TRANSLATE);
+
+        $this->config = $objectManager->get(\Magento\Cron\Model\ConfigInterface::class);
         $jobCode = $input->getOption(self::CLI_INPUT_JOB_CODE);
         if(!$jobCode){
             $output->writeln('<error>You must provide a job code to run</error>');
@@ -82,7 +98,7 @@ class RunCronJob extends Command
             return self::EXIT_CODE_INVALID_JOB_CONFIG;
         }
 
-        $model = $this->objectManager->create($jobConfig['instance']);
+        $model = $objectManager->create($jobConfig['instance']);
         $method = $jobConfig['method'];
         $callback = [$model, $method];
 
