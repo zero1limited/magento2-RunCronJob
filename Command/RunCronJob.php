@@ -9,6 +9,8 @@ use Magento\Framework\App\ObjectManagerFactory;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManager;
 use Magento\Framework\App\Area;
+use Magento\Cron\Model\Schedule;
+use Magento\Cron\Model\ScheduleFactory;
 
 class RunCronJob extends Command
 {
@@ -25,10 +27,15 @@ class RunCronJob extends Command
     /** @var \Magento\Cron\Model\ConfigInterface */
     protected $config;
 
+    /** @var \Magento\Cron\Model\ScheduleFactory */
+    protected $scheduleFactory;
+
     public function __construct(
-        ObjectManagerFactory $objectManagerFactory
+        ObjectManagerFactory $objectManagerFactory,
+        ScheduleFactory $scheduleFactory
     ){
         $this->objectManagerFactory = $objectManagerFactory;
+        $this->scheduleFactory = $scheduleFactory;
         parent::__construct();
     }
 
@@ -117,8 +124,11 @@ class RunCronJob extends Command
             $method
         ));
 
+        $schedule = $this->scheduleFactory->create();
+        $schedule->setJobCode($jobCode);
+
         $startTime = time();
-        call_user_func($callback);
+        call_user_func_array($callback, [$schedule]);
         $runTime = (time() - $startTime);
 
         $output->writeln('<info>Finished</info>');
